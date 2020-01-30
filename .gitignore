@@ -1,0 +1,36 @@
+# IDE
+.idea/
+.vscode/
+
+# Autotools
+*.cache/
+.deps/
+config.*
+configure
+Makefile.in
+Makefile
+depcomp
+compile
+libtool
+ltmain.sh
+install-sh
+missing
+stamp-h1
+.dirstamp
+aclocal.m4
+
+# build
+*.o
+*.lo
+*.loT
+*.la
+*.lai
+*.a
+*.so
+*.dylib
+.libs
+u6ac
+u6a
+
+# others
+*.log
