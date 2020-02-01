@@ -56,8 +56,8 @@ write_bc_header(FILE* restrict output_stream, uint32_t text_len, uint32_t rodata
             .prog_header_size = U6A_BC_PROG_HEADER_SIZE
         },
         .prog = {
-            .text_size        = htonl(text_len * sizeof(uint8_t)),
-            .rodata_size      = htonl(rodata_len * sizeof(struct u6a_token))
+            .text_size        = htonl(text_len * sizeof(struct u6a_vm_ins)),
+            .rodata_size      = htonl(rodata_len * sizeof(uint8_t))
         }
     };
     return 1 == fwrite(&header, sizeof(struct u6a_bc_header), 1, output_stream);
@@ -111,9 +111,9 @@ u6a_codegen(struct u6a_ast_node* ast_arr, uint32_t ast_len) {
         struct u6a_ast_node* rchild = U6A_AN_RIGHT(node, ast_arr);
         if (U6A_AN_FN(lchild) == u6a_tf_app) {
             if (U6A_AN_FN(rchild) == u6a_tf_app) {
-                stack[stack_top++].ins.opcode = u6a_vo_sa;
+                stack[++stack_top].ins.opcode = u6a_vo_sa;
             } else {
-                stack[stack_top++].ins = (struct u6a_vm_ins) {
+                stack[++stack_top].ins = (struct u6a_vm_ins) {
                     .opcode = u6a_vo_app,
                     .operand.fn.second = rchild->value
                 };
@@ -122,12 +122,12 @@ u6a_codegen(struct u6a_ast_node* ast_arr, uint32_t ast_len) {
             if (U6A_AN_FN(rchild) == u6a_tf_app) {
                 if (U6A_AN_FN(lchild) == u6a_tf_d) {
                     text_buffer[text_len].opcode = u6a_vo_del;
-                    stack[stack_top++] = (struct ins_with_offset) {
+                    stack[++stack_top] = (struct ins_with_offset) {
                         .ins.opcode = u6a_vo_la,
                         .offset = text_len++
                     };
                 } else {
-                    stack[stack_top++].ins = (struct u6a_vm_ins) {
+                    stack[++stack_top].ins = (struct u6a_vm_ins) {
                         .opcode = u6a_vo_app,
                         .operand.fn.first = lchild->value
                     };

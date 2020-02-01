@@ -118,7 +118,7 @@ vm_var_fn_free(struct u6a_vm_var_fn var) {
 bool
 u6a_runtime_info(FILE* restrict input_stream, const char* file_name) {
     struct u6a_bc_header header;
-    if (UNLIKELY(read_bc_header(&header, input_stream))) {
+    if (UNLIKELY(!read_bc_header(&header, input_stream))) {
         u6a_err_invalid_bc_file(err_runtime, file_name);
         return false;
     }
@@ -137,16 +137,18 @@ u6a_runtime_info(FILE* restrict input_stream, const char* file_name) {
 bool
 u6a_runtime_init(struct u6a_runtime_options* options) {
     struct u6a_bc_header header;
-    if (UNLIKELY(read_bc_header(&header, options->istream))) {
+    if (UNLIKELY(!read_bc_header(&header, options->istream))) {
         u6a_err_invalid_bc_file(err_runtime, options->file_name);
         return false;
     }
-    if (UNLIKELY(CHECK_BC_HEADER_VER(header.file))) {
+    if (UNLIKELY(!CHECK_BC_HEADER_VER(header.file))) {
         if (!options->force_exec || header.file.prog_header_size != U6A_BC_FILE_HEADER_SIZE) {
             u6a_err_bad_bc_ver(err_runtime, options->file_name, header.file.ver_major, header.file.ver_minor);
             return false;
         }
     }
+    header.prog.text_size = ntohl(header.prog.text_size);
+    header.prog.rodata_size = ntohl(header.prog.rodata_size);
     text = malloc(header.prog.text_size + sizeof(text_subst));
     if (UNLIKELY(text == NULL)) {
         u6a_err_bad_alloc(err_runtime, header.prog.text_size + sizeof(text_subst));

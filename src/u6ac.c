@@ -73,7 +73,7 @@ process_options(struct arg_options* options, int argc, char** argv) {
     options->optimize_const = false;
     bool syntax_only = false;
     bool verbose = false;
-    char optimize_level;
+    char optimize_level = '1';
     while (true) {
         int result = getopt_long(argc, argv, "o:O::vHV", long_opts, NULL);
         if (result == -1) {
@@ -88,9 +88,6 @@ process_options(struct arg_options* options, int argc, char** argv) {
                 break;
             case 'O':
                 optimize_level = optarg ? optarg[0] : '1';
-                if (optimize_level > '0') {
-                    options->optimize_const = true;
-                }
             case 'p':
                 if (UNLIKELY(options->output_file_prefix)) {
                     break;
@@ -176,6 +173,9 @@ process_options(struct arg_options* options, int argc, char** argv) {
                 return false;
             }
         }
+    }
+    if (optimize_level > '0') {
+        options->optimize_const = true;
     }
     u6a_logging_verbose(verbose);
     return true;

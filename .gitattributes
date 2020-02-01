@@ -1,1 +1,5 @@
-*.h linguist-language=c
+# Attributes for GitHub Linguist
+*.h  linguist-language=c
+*.1  linguist-documentation
+*.ac linguist-detectable=false
+*.am linguist-detectable=false

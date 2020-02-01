@@ -6,56 +6,43 @@ Implementation of Unlambda, an esoteric programming language.
 
 ## Description
 
-The u6a project provides a C implementation of the [Unlambda](http://www.madore.org/~david/programs/unlambda/) programming language, where Unlambda source code can be compiled into bytecode and executed in a virtual machine.
+The u6a project provides a bytecode compiler and a runtime system for the [Unlambda](http://www.madore.org/~david/programs/unlambda/) programming language.
 
-Ideas behind this implementation can be found [here](https://).
+Ideas behind this implementation can be found [here](https://cismon.net/articles/2020/01/30/1580374678582.html).
 
-## Requirements
+## Getting Started
 
-* A POSIX-compliant operating system
-* GNU Autotools
-* GNU Make
-* A C compiler (with C99 support)
-
-## Build
+Building:
 
 ```bash
 # (If not already) Install the required build tools.
 sudo apt install build-essential automake
-
-# Generate configure files.
+# Generate configuration script.
 autoreconf --install
-
-# Run configure script with desired options.
+# Execute configuration script with desired options.
 ./configure --prefix=$HOME
-
-# Compile sources and generate executables.
+# Compile source code and generate executables.
 make
-
 # (Optional) Run tests.
 make check
-
 # (Optional) Install executables and man pages.
 make install
 ```
 
-## Usage
-
-First, compile an Unlambda source file into bytecode.
+Usage:
 
 ```bash
+# Compile an Unlambda source file into bytecode.
 u6ac -o foo.unl.bc foo.unl
-```
-
-Then, execute the bytecode file with the interpreter.
-
-```bash
+# execute the bytecode file.
 u6a foo.unl.bc
 ```
 
 See [**u6ac**(1)](man/u6ac.1) and [**u6a**(1)](man/u6a.1) man pages for details.
 
-## TODOs
+## Future Plans
 
-* `u6adb` - An interactive debugger for Unlambda
+* Interactive debugger: `u6adb`
 * More compile-time optimizations
+* More test cases
+* LLVM backend for `u6ac`
