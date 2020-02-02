@@ -1,4 +1,4 @@
-MANPATH_MAP = $(shell cat $(MANPATH_CONF) | grep -w -m1 $(prefix)/bin)
+MANPATH_MAP = $(shell cat $(MANPATH_CONF) | grep ^MANPATH_MAP | grep -w -m1 $(prefix)/bin)
 MAN_DIR     = $(word 3, $(MANPATH_MAP))
 MAN1_DIR    = $(MAN_DIR)/man1
 MAN_FILES   = u6ac.1 u6a.1
