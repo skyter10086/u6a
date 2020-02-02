@@ -6,8 +6,6 @@ os:
 
 dist: bionic
 
-sudo: required
-
 compiler:
   - gcc
   - clang
