@@ -1,8 +1,10 @@
-MAN_DIR = $(prefix)/share/man/man1
-MAN_FILES = u6ac.1 u6a.1
+MANPATH_MAP = $(shell cat $(MANPATH_CONF) | grep -w -m1 $(prefix))
+MAN_DIR     = $(word 3, $(MANPATH_MAP))
+MAN1_DIR    = $(MAN_DIR)/man1
+MAN_FILES   = u6ac.1 u6a.1
 
 install: $(MAN_FILES)
-	mkdir -p $(MAN_DIR) && cp -t $(MAN_DIR) $^
+	cp -t $(MAN1_DIR) $^ && $(REBUILD_MANDB) $(MAN_DIR)
 
 uninstall: $(MAN_FILES)
-	pushd $(MAN_DIR) && rm -f $^ && popd
+	pushd $(MAN1_DIR) && rm -f $^ && popd && $(REBUILD_MANDB) $(MAN_DIR)

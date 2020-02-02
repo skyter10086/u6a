@@ -1,6 +1,7 @@
 # u6a
 
-[![license](https://img.shields.io/badge/licence-GPLv3-blue.svg)](LICENSE)
+[![Travis CI](https://travis-ci.com/CismonX/u6a.svg)](https://travis-ci.com/CismonX/u6a)
+[![LICENSE](https://img.shields.io/badge/licence-GPLv3-blue.svg)](LICENSE)
 
 Implementation of Unlambda, an esoteric programming language.
 

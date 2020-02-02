@@ -35,27 +35,26 @@ static        uint32_t  stack_seg_len;
 
 static inline struct vm_stack*
 vm_stack_create(struct vm_stack* prev, uint32_t top) {
-    const uint32_t size = sizeof(struct vm_stack) + stack_seg_len * sizeof(union u6a_vm_var);
+    const uint32_t size = sizeof(struct vm_stack) + stack_seg_len * sizeof(struct u6a_vm_var_fn);
     struct vm_stack* vs = malloc(size);
     if (UNLIKELY(vs == NULL)) {
         return NULL;
     }
-    return vs = &(struct vm_stack) {
-        .prev = prev,
-        .top = top,
-        .refcnt = 1
-    };
+    vs->prev = prev;
+    vs->top = top;
+    vs->refcnt = 1;
+    return vs;
 }
 
 static inline struct vm_stack*
 vm_stack_dup() {
     struct vm_stack* vs = active_stack;
-    const uint32_t size = sizeof(struct vm_stack) + stack_seg_len * sizeof(union u6a_vm_var);
+    const uint32_t size = sizeof(struct vm_stack) + stack_seg_len * sizeof(struct u6a_vm_var_fn);
     struct vm_stack* dup_stack = malloc(size);
     if (UNLIKELY(dup_stack == NULL)) {
         return NULL;
     }
-    memcpy(dup_stack, vs, sizeof(struct vm_stack) + (vs->top + 1) * sizeof(union u6a_vm_var));
+    memcpy(dup_stack, vs, sizeof(struct vm_stack) + (vs->top + 1) * sizeof(struct u6a_vm_var_fn));
     dup_stack->refcnt = 1;
     return dup_stack;
 }

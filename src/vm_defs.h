@@ -53,20 +53,20 @@ enum u6a_vm_opcode_ex {
 enum u6a_vm_fn {
     u6a_vf_placeholder_,
     u6a_vf_k, u6a_vf_s, u6a_vf_i, u6a_vf_v, u6a_vf_c, u6a_vf_d, u6a_vf_e,
-    u6a_vf_in,                    /* @     */
-    u6a_vf_pipe,                  /* |     */
-    u6a_vf_out = U6A_VM_FN_CHAR,  /* .X    */
-    u6a_vf_cmp,                   /* ?X    */
-    u6a_vf_k1 = U6A_VM_FN_REF,    /* `kX   */
-    u6a_vf_s1,                    /* `sX   */
-    u6a_vf_s2,                    /* ``sXY */
-    u6a_vf_c1,                    /* `cX   */
-    u6a_vf_d1_s = U6A_VM_FN_PROMISE,                  /* `d`XZ      */
-    u6a_vf_d1_c,                                      /* `dX        */
-    u6a_vf_d1_d,                                      /* `dF        */
-    u6a_vf_j = U6A_VM_FN_INTERNAL,                    /* (jump)     */
-    u6a_vf_f,                                         /* (finalize) */
-    u6a_vf_p                                          /* (print)    */
+    u6a_vf_in,                        /* @          */
+    u6a_vf_pipe,                      /* |          */
+    u6a_vf_out = U6A_VM_FN_CHAR,      /* .X         */
+    u6a_vf_cmp,                       /* ?X         */
+    u6a_vf_k1 = U6A_VM_FN_REF,        /* `kX        */
+    u6a_vf_s1,                        /* `sX        */
+    u6a_vf_s2,                        /* ``sXY      */
+    u6a_vf_c1,                        /* `cX        */
+    u6a_vf_d1_s = U6A_VM_FN_PROMISE,  /* `d`XZ      */
+    u6a_vf_d1_c,                      /* `dX        */
+    u6a_vf_d1_d,                      /* `dF        */
+    u6a_vf_j = U6A_VM_FN_INTERNAL,    /* (jump)     */
+    u6a_vf_f,                         /* (finalize) */
+    u6a_vf_p                          /* (print)    */
 };
 
 struct u6a_vm_ins {

@@ -144,6 +144,7 @@ u6a_codegen(struct u6a_ast_node* ast_arr, uint32_t ast_len) {
                         if (peek_ins.opcode == u6a_vo_app && operand_first.fn == u6a_tf_out && !operand_second.fn) {
                             rodata_buffer[rodata_len++] = operand_first.ch;
                         } else {
+                            ++stack_top;
                             break;
                         }
                     }
@@ -178,7 +179,7 @@ u6a_codegen(struct u6a_ast_node* ast_arr, uint32_t ast_len) {
                     struct ins_with_offset* top_elem = stack + stack_top--;
                     if (top_elem->ins.opcode == u6a_vo_sa) {
                         text_buffer[text_len].opcode = u6a_vo_sa;
-                        stack[stack_top++] = (struct ins_with_offset) {
+                        stack[++stack_top] = (struct ins_with_offset) {
                             .ins.opcode = u6a_vo_la,
                             .offset = text_len++
                         };

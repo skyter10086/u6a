@@ -90,20 +90,20 @@ free_stack_pop() {
 
 bool
 u6a_vm_pool_init(uint32_t pool_len_, uint32_t ins_len) {
-    const uint32_t pool_size = sizeof(struct vm_pool) + pool_len * sizeof(struct vm_pool_elem);
+    const uint32_t pool_size = sizeof(struct vm_pool) + pool_len_ * sizeof(struct vm_pool_elem);
     active_pool = malloc(pool_size);
     if (UNLIKELY(active_pool == NULL)) {
         return false;
     }
-    const uint32_t holes_size = sizeof(struct vm_pool_elem_ptrs) + pool_len * sizeof(struct vm_pool_elem*);
+    const uint32_t holes_size = sizeof(struct vm_pool_elem_ptrs) + pool_len_ * sizeof(struct vm_pool_elem*);
     holes = malloc(holes_size);
-    if (UNLIKELY(active_pool == NULL)) {
-        free(active_pool);
+    if (UNLIKELY(holes == NULL)) {
+        free(holes);
         return false;
     }
-    const uint32_t free_stack_size = fstack_len * sizeof(struct vm_pool_elem*);
+    const uint32_t free_stack_size = ins_len * sizeof(struct vm_pool_elem*);
     fstack = malloc(free_stack_size);
-    if (UNLIKELY(active_pool == NULL)) {
+    if (UNLIKELY(fstack == NULL)) {
         free(active_pool);
         free(holes);
         return false;
@@ -150,10 +150,8 @@ u6a_vm_pool_alloc2(struct u6a_vm_var_fn v1, struct u6a_vm_var_fn v2) {
     if (UNLIKELY(elem == NULL)) {
         return UINT32_MAX;
     }
-    elem = &(struct vm_pool_elem) {
-        .values = { .v1.fn = v1, .v2.fn = v2 },
-        .flags = 0
-    };
+    elem->values = (struct u6a_vm_var_tuple) { .v1.fn = v1, .v2.fn = v2 };
+    elem->flags = 0;
     return elem - active_pool->elems;
 }
 
@@ -163,10 +161,8 @@ u6a_vm_pool_alloc2_ptr(void* v1, void* v2) {
     if (UNLIKELY(elem == NULL)) {
         return UINT32_MAX;
     }
-    elem = &(struct vm_pool_elem) {
-        .values = { .v1.ptr = v1, .v2.ptr = v2 },
-        .flags = POOL_ELEM_HOLDS_PTR
-    };
+    elem->values = (struct u6a_vm_var_tuple) { .v1.ptr = v1, .v2.ptr = v2 };
+    elem->flags = POOL_ELEM_HOLDS_PTR;
     return elem - active_pool->elems;
 }
 
@@ -186,7 +182,7 @@ u6a_vm_pool_free(uint32_t offset) {
     fstack_top = UINT32_MAX;
     do {
         if (--elem->refcnt == 0) {
-            holes->elems[holes->pos] = elem;
+            holes->elems[++holes->pos] = elem;
             if (elem->flags & POOL_ELEM_HOLDS_PTR) {
                 // Continuation destroyed before used
                 u6a_vm_stack_discard(elem->values.v1.ptr);
@@ -195,7 +191,7 @@ u6a_vm_pool_free(uint32_t offset) {
                 free_stack_push(elem->values.v2);
             }
         }
-    } while (elem = free_stack_pop());
+    } while ((elem = free_stack_pop()));
 }
 
 void

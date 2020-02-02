@@ -6,6 +6,8 @@ os:
 
 dist: bionic
 
+sudo: required
+
 compiler:
   - gcc
   - clang
@@ -19,3 +21,6 @@ script:
   - ./configure
   - make
   - make check
+  - sudo make install
+  - command -v u6a u6ac
+# - whatis u6a u6ac      # broken on macOS...

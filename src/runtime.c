@@ -255,7 +255,7 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                         ins = text + func.ref;
                         func = acc;
                         // The `s2` function incremenets IP before pushing `j`, so decrement IP here
-                        if (func.token.fn = u6a_vf_s2) {
+                        if (func.token.fn == u6a_vf_s2) {
                             --ins;
                         }
                         arg = STACK_POP();
@@ -279,7 +279,7 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                     case u6a_vf_d1_c:
                         func = POOL_GET1(func.ref);
                         goto do_apply;
-                    case u6a_vf_d1_s: ;
+                    case u6a_vf_d1_s:
                         tuple = POOL_GET2(func.ref);
                         STACK_PUSH1(tuple.v1.fn);
                         acc = tuple.v2.fn;
@@ -339,8 +339,8 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                 break;
             case u6a_vo_del:
                 delay:
-                acc = U6A_VM_VAR_FN_REF(u6a_vf_d1_d, ins + 1 - text);
-                ins = text + ins->operand.offset;
+                STACK_PUSH1(U6A_VM_VAR_FN_REF(u6a_vf_d1_d, ins + 1 - text));
+                ins = text + text_subst_len + ins->operand.offset;
                 continue;
             case u6a_vo_lc:
                 switch (ins->opcode_ex) {
