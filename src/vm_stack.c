@@ -18,6 +18,7 @@
  */
 
 #include "vm_stack.h"
+#include "vm_pool.h"
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -47,8 +48,7 @@ vm_stack_create(struct vm_stack* prev, uint32_t top) {
 }
 
 static inline struct vm_stack*
-vm_stack_dup() {
-    struct vm_stack* vs = active_stack;
+vm_stack_dup(struct vm_stack* vs) {
     const uint32_t size = sizeof(struct vm_stack) + stack_seg_len * sizeof(struct u6a_vm_var_fn);
     struct vm_stack* dup_stack = malloc(size);
     if (UNLIKELY(dup_stack == NULL)) {
@@ -56,6 +56,15 @@ vm_stack_dup() {
     }
     memcpy(dup_stack, vs, sizeof(struct vm_stack) + (vs->top + 1) * sizeof(struct u6a_vm_var_fn));
     dup_stack->refcnt = 1;
+    for (uint32_t idx = vs->top; idx < UINT32_MAX; --idx) {
+        struct u6a_vm_var_fn elem = vs->elems[idx];
+        if (elem.token.fn & U6A_VM_FN_REF) {
+            u6a_vm_pool_addref(elem.ref);
+        }
+    }
+    if (vs->prev) {
+        ++vs->prev->refcnt;
+    }
     return dup_stack;
 }
 
@@ -65,11 +74,18 @@ vm_stack_free(struct vm_stack* vs) {
     do {
         prev = vs->prev;
         if (--vs->refcnt == 0) {
+            for (uint32_t idx = vs->top; idx < UINT32_MAX; --idx) {
+                struct u6a_vm_var_fn elem = vs->elems[idx];
+                if (elem.token.fn & U6A_VM_FN_REF) {
+                    u6a_vm_pool_free(elem.ref);
+                }
+            }
             free(vs);
+            vs = prev;
         } else {
             break;
         }
-    } while (prev);
+    } while (vs);
 }
 
 bool
@@ -186,7 +202,7 @@ u6a_vm_stack_pop() {
         return false;
     }
     if (active_stack->refcnt-- > 1) {
-        active_stack = vm_stack_dup();
+        active_stack = vm_stack_dup(active_stack);
     }
     if (UNLIKELY(active_stack == NULL)) {
         active_stack = vs;
@@ -206,7 +222,12 @@ u6a_vm_stack_xch(struct u6a_vm_var_fn v0) {
 
 void*
 u6a_vm_stack_save() {
-    return vm_stack_dup();
+    return vm_stack_dup(active_stack);
+}
+
+void*
+u6a_vm_stack_dup(void* ptr) {
+    return vm_stack_dup(ptr);
 }
 
 void

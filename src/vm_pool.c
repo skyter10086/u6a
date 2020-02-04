@@ -85,7 +85,7 @@ free_stack_pop() {
     if (fstack_top == UINT32_MAX) {
         return NULL;
     }
-    return fstack[--fstack_top];
+    return fstack[fstack_top--];
 }
 
 bool
@@ -174,6 +174,22 @@ u6a_vm_pool_get1(uint32_t offset) {
 U6A_HOT struct u6a_vm_var_tuple
 u6a_vm_pool_get2(uint32_t offset) {
     return (active_pool->elems + offset)->values;
+}
+
+U6A_HOT struct u6a_vm_var_tuple
+u6a_vm_pool_get2_separate(uint32_t offset) {
+    struct vm_pool_elem* elem = active_pool->elems + offset;
+    struct u6a_vm_var_tuple values = elem->values;
+    if (elem->refcnt > 1) {
+        // Continuation having more than 1 reference should be separated before reinstatement
+        values.v1.ptr = u6a_vm_stack_dup(values.v1.ptr);
+    }
+    return values;
+}
+
+U6A_HOT void
+u6a_vm_pool_addref(uint32_t offset) {
+    ++active_pool->elems[offset].refcnt;
 }
 
 U6A_HOT void

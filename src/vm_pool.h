@@ -47,6 +47,12 @@ u6a_vm_pool_get1(uint32_t offset);
 struct u6a_vm_var_tuple
 u6a_vm_pool_get2(uint32_t offset);
 
+struct u6a_vm_var_tuple
+u6a_vm_pool_get2_separate(uint32_t offset);
+
+void
+u6a_vm_pool_addref(uint32_t offset);
+
 void
 u6a_vm_pool_free(uint32_t offset);
 

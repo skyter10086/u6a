@@ -83,9 +83,6 @@ static const char* info_runtime = "runtime";
 #define POOL_GET1(offset)                                    \
     u6a_vm_pool_get1(offset).fn;                             \
     u6a_vm_pool_free(offset)
-#define POOL_GET2(offset)                                    \
-    u6a_vm_pool_get2(offset);                                \
-    u6a_vm_pool_free(offset)
 
 static inline bool
 read_bc_header(struct u6a_bc_header* restrict header, FILE* restrict input_stream) {
@@ -106,6 +103,13 @@ read_bc_header(struct u6a_bc_header* restrict header, FILE* restrict input_strea
         return 1 == fread(&header->prog, header->file.prog_header_size, 1, input_stream);
     }
     return true;
+}
+
+static inline void
+vm_var_fn_addref(struct u6a_vm_var_fn var) {
+    if (var.token.fn & U6A_VM_FN_REF) {
+        u6a_vm_pool_addref(var.ref);
+    }
 }
 
 static inline void
@@ -221,16 +225,15 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                     case u6a_vf_s1:
                         ACC_FN_REF(u6a_vf_s2, u6a_vm_pool_fill2(func.ref, arg));
                         break;
-                        ACC_FN_REF(u6a_vf_d1_c, u6a_vm_pool_alloc1(arg));
                     case u6a_vf_s2:
                         if (ins++ - text == 0x03) {
                             STACK_PUSH3(arg, u6a_vm_pool_get2(func.ref));
                         } else {
                             STACK_PUSH4(U6A_VM_VAR_FN_REF(u6a_vf_j, ins - text), arg, u6a_vm_pool_get2(func.ref));
                         }
-                        u6a_vm_pool_free(func.ref);
+                        vm_var_fn_addref(arg);
                         ins = text;
-                        goto do_apply;
+                        continue;
                     case u6a_vf_k:
                         ACC_FN_REF(u6a_vf_k1, u6a_vm_pool_alloc1(arg));
                         break;
@@ -271,8 +274,9 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                         ACC_FN_REF(u6a_vf_d1_c, u6a_vm_pool_alloc1(arg));
                         break;
                     case u6a_vf_c1:
-                        tuple = POOL_GET2(func.ref);
+                        tuple = u6a_vm_pool_get2_separate(func.ref);
                         u6a_vm_stack_resume(tuple.v1.ptr);
+                        u6a_vm_pool_free(func.ref);
                         ins = tuple.v2.ptr;
                         acc = arg;
                         break;
@@ -280,7 +284,8 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                         func = POOL_GET1(func.ref);
                         goto do_apply;
                     case u6a_vf_d1_s:
-                        tuple = POOL_GET2(func.ref);
+                        tuple = u6a_vm_pool_get2(func.ref);
+                        u6a_vm_pool_free(func.ref);
                         STACK_PUSH1(tuple.v1.fn);
                         acc = tuple.v2.fn;
                         ins = text + 0x03;
@@ -310,7 +315,7 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                     case u6a_vf_pipe:
                         func = arg;
                         if (UNLIKELY(current_char == EOF)) {
-                            arg.token.fn = u6a_vf_v;acc = u6a_vm_stack_xch(acc);
+                            arg.token.fn = u6a_vf_v;
                         } else {
                             arg.token = U6A_TOKEN(u6a_vf_out, current_char);
                         }
@@ -339,7 +344,7 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                 break;
             case u6a_vo_del:
                 delay:
-                STACK_PUSH1(U6A_VM_VAR_FN_REF(u6a_vf_d1_d, ins + 1 - text));
+                acc = U6A_VM_VAR_FN_REF(u6a_vf_d1_d, ins + 1 - text);
                 ins = text + text_subst_len + ins->operand.offset;
                 continue;
             case u6a_vo_lc:

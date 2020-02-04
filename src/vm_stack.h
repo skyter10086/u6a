@@ -55,6 +55,9 @@ u6a_vm_stack_xch(struct u6a_vm_var_fn v1);
 void*
 u6a_vm_stack_save();
 
+void*
+u6a_vm_stack_dup(void* ptr);
+
 void
 u6a_vm_stack_resume(void* ptr);
 
