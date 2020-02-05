@@ -19,6 +19,7 @@
 
 #include "vm_pool.h"
 #include "vm_stack.h"
+#include "logging.h"
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -48,11 +49,14 @@ static struct vm_pool_elem**     fstack;
 static        uint32_t           fstack_len;
 static        uint32_t           fstack_top;
 
+const char* err_stage;
+
 static inline struct vm_pool_elem*
 vm_pool_elem_alloc() {
     struct vm_pool_elem* new_elem;
     if (holes->pos == UINT32_MAX) {
         if (UNLIKELY(++active_pool->pos >= pool_len)) {
+            u6a_err_vm_pool_oom(err_stage);
             return NULL;
         }
         new_elem = active_pool->elems + active_pool->pos;
@@ -89,21 +93,24 @@ free_stack_pop() {
 }
 
 bool
-u6a_vm_pool_init(uint32_t pool_len_, uint32_t ins_len) {
+u6a_vm_pool_init(uint32_t pool_len_, uint32_t ins_len, const char* err_stage_) {
     const uint32_t pool_size = sizeof(struct vm_pool) + pool_len_ * sizeof(struct vm_pool_elem);
     active_pool = malloc(pool_size);
     if (UNLIKELY(active_pool == NULL)) {
+        u6a_err_bad_alloc(err_stage_, pool_size);
         return false;
     }
     const uint32_t holes_size = sizeof(struct vm_pool_elem_ptrs) + pool_len_ * sizeof(struct vm_pool_elem*);
     holes = malloc(holes_size);
     if (UNLIKELY(holes == NULL)) {
+        u6a_err_bad_alloc(err_stage_, holes_size);
         free(holes);
         return false;
     }
     const uint32_t free_stack_size = ins_len * sizeof(struct vm_pool_elem*);
     fstack = malloc(free_stack_size);
     if (UNLIKELY(fstack == NULL)) {
+        u6a_err_bad_alloc(err_stage_, free_stack_size);
         free(active_pool);
         free(holes);
         return false;
@@ -112,6 +119,7 @@ u6a_vm_pool_init(uint32_t pool_len_, uint32_t ins_len) {
     holes->pos = UINT32_MAX;
     pool_len = pool_len_;
     fstack_len = ins_len;
+    err_stage = err_stage_;
     return true;
 }
 

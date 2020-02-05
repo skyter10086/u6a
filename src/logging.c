@@ -98,8 +98,8 @@ u6a_err_cannot_open_file(const char* stage, const char* filename) {
 }
 
 U6A_COLD void
-u6a_err_stack_underflow(const char* stage, const char* description) {
-    fprintf(stderr, "%s: [%s] stack underflow error, %s.\n", prog_name, stage, description);
+u6a_err_stack_underflow(const char* stage) {
+    fprintf(stderr, "%s: [%s] stack underflow.\n", prog_name, stage);
 }
 
 U6A_COLD void
@@ -118,10 +118,15 @@ u6a_err_invalid_bc_file(const char* stage, const char* filename) {
     fprintf(stderr, "%s: [%s] %s is not a valid Unlambda bytecode file.\n", prog_name, stage, filename);
 }
 
-void
+U6A_COLD void
 u6a_err_bad_bc_ver(const char* stage, const char* filename, int ver_major, int ver_minor) {
     fprintf(stderr, "%s: [%s] bytecode file %s version %d.%d is not compatible.\n",
         prog_name, stage, filename, ver_major, ver_minor);
+}
+
+U6A_COLD void
+u6a_err_vm_pool_oom(const char* stage) {
+    fprintf(stderr, "%s: [%s] VM object pool memory exhausted.\n", stage, prog_name);
 }
 
 U6A_COLD void

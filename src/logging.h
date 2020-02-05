@@ -63,7 +63,7 @@ void
 u6a_err_cannot_open_file(const char* stage, const char* filename);
 
 void
-u6a_err_stack_underflow(const char* stage, const char* description);
+u6a_err_stack_underflow(const char* stage);
 
 void
 u6a_err_invalid_uint(const char* stage, const char* str);
@@ -76,6 +76,9 @@ u6a_err_invalid_bc_file(const char* stage, const char* filename);
 
 void
 u6a_err_bad_bc_ver(const char* stage, const char* filename, int ver_major, int ver_minor);
+
+void
+u6a_err_vm_pool_oom(const char* stage);
 
 void
 u6a_info_verbose_(const char* format, ...);

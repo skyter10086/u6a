@@ -25,7 +25,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define U6A_TOKEN_FN_CHAR ( 1 << 6 )
+#define U6A_TOKEN_FN_CHAR ( 1 << 4 )
 #define U6A_TOKEN_FN_APP  ( 1 << 5 )
 
 enum u6a_token_fn {

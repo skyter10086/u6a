@@ -27,7 +27,7 @@
 #include <stdbool.h>
 
 bool
-u6a_vm_pool_init(uint32_t pool_len, uint32_t ins_len);
+u6a_vm_pool_init(uint32_t pool_len, uint32_t ins_len, const char* err_stage);
 
 uint32_t
 u6a_vm_pool_alloc1(struct u6a_vm_var_fn v1);

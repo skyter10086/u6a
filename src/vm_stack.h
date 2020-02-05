@@ -27,7 +27,7 @@
 #include <stdbool.h>
 
 bool
-u6a_vm_stack_init(uint32_t stack_seg_len);
+u6a_vm_stack_init(uint32_t stack_seg_len, const char* err_stage);
 
 struct u6a_vm_var_fn
 u6a_vm_stack_top();

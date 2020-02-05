@@ -19,6 +19,7 @@
 
 #include "vm_stack.h"
 #include "vm_pool.h"
+#include "logging.h"
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -34,11 +35,14 @@ struct vm_stack {
 static struct vm_stack* active_stack;
 static        uint32_t  stack_seg_len;
 
+const char* err_stage;
+
 static inline struct vm_stack*
 vm_stack_create(struct vm_stack* prev, uint32_t top) {
     const uint32_t size = sizeof(struct vm_stack) + stack_seg_len * sizeof(struct u6a_vm_var_fn);
     struct vm_stack* vs = malloc(size);
     if (UNLIKELY(vs == NULL)) {
+        u6a_err_bad_alloc(err_stage, size);
         return NULL;
     }
     vs->prev = prev;
@@ -52,6 +56,7 @@ vm_stack_dup(struct vm_stack* vs) {
     const uint32_t size = sizeof(struct vm_stack) + stack_seg_len * sizeof(struct u6a_vm_var_fn);
     struct vm_stack* dup_stack = malloc(size);
     if (UNLIKELY(dup_stack == NULL)) {
+        u6a_err_bad_alloc(err_stage, size);
         return NULL;
     }
     memcpy(dup_stack, vs, sizeof(struct vm_stack) + (vs->top + 1) * sizeof(struct u6a_vm_var_fn));
@@ -89,9 +94,10 @@ vm_stack_free(struct vm_stack* vs) {
 }
 
 bool
-u6a_vm_stack_init(uint32_t stack_seg_len_) {
+u6a_vm_stack_init(uint32_t stack_seg_len_, const char* err_stage_) {
     active_stack = vm_stack_create(NULL, UINT32_MAX);
     stack_seg_len = stack_seg_len_;
+    err_stage = err_stage_;
     return active_stack != NULL;
 }
 
@@ -198,6 +204,7 @@ u6a_vm_stack_pop() {
     }
     active_stack = vs->prev;
     if (UNLIKELY(active_stack == NULL)) {
+        u6a_err_stack_underflow(err_stage);
         active_stack = vs;
         return false;
     }

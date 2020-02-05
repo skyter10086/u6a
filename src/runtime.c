@@ -173,10 +173,10 @@ u6a_runtime_init(struct u6a_runtime_options* options) {
     if (UNLIKELY(rodata_len != fread(rodata, sizeof(char), rodata_len, options->istream))) {
         goto runtime_init_failed;
     }
-    if (UNLIKELY(!u6a_vm_stack_init(options->stack_segment_size))) {
+    if (UNLIKELY(!u6a_vm_stack_init(options->stack_segment_size, err_runtime))) {
         goto runtime_init_failed;
     }
-    if (UNLIKELY(!u6a_vm_pool_init(options->pool_size, text_len))) {
+    if (UNLIKELY(!u6a_vm_pool_init(options->pool_size, text_len, err_runtime))) {
         goto runtime_init_failed;
     }
     for (struct u6a_vm_ins* ins = text + text_subst_len; ins < text + text_len; ++ins) {
