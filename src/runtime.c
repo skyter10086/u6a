@@ -80,10 +80,6 @@ static const char* info_runtime = "runtime";
         goto runtime_error;                                  \
     }
 
-#define POOL_GET1(offset)                                    \
-    u6a_vm_pool_get1(offset).fn;                             \
-    u6a_vm_pool_free(offset)
-
 static inline bool
 read_bc_header(struct u6a_bc_header* restrict header, FILE* restrict input_stream) {
     int ch;
@@ -105,11 +101,12 @@ read_bc_header(struct u6a_bc_header* restrict header, FILE* restrict input_strea
     return true;
 }
 
-static inline void
+static inline struct u6a_vm_var_fn
 vm_var_fn_addref(struct u6a_vm_var_fn var) {
     if (var.token.fn & U6A_VM_FN_REF) {
         u6a_vm_pool_addref(var.ref);
     }
+    return var;
 }
 
 static inline void
@@ -223,44 +220,38 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                         ACC_FN_REF(u6a_vf_s1, u6a_vm_pool_alloc1(arg));
                         break;
                     case u6a_vf_s1:
-                        ACC_FN_REF(u6a_vf_s2, u6a_vm_pool_fill2(func.ref, arg));
+                        ACC_FN_REF(u6a_vf_s2, u6a_vm_pool_alloc2(u6a_vm_pool_get1(func.ref).fn, arg));
                         break;
                     case u6a_vf_s2:
-                        if (ins++ - text == 0x03) {
+                        if (ins - text == 0x03) {
                             STACK_PUSH3(arg, u6a_vm_pool_get2(func.ref));
                         } else {
                             STACK_PUSH4(U6A_VM_VAR_FN_REF(u6a_vf_j, ins - text), arg, u6a_vm_pool_get2(func.ref));
                         }
-                        vm_var_fn_addref(arg);
+                        acc = vm_var_fn_addref(arg);
                         ins = text;
                         continue;
                     case u6a_vf_k:
                         ACC_FN_REF(u6a_vf_k1, u6a_vm_pool_alloc1(arg));
                         break;
                     case u6a_vf_k1:
-                        vm_var_fn_free(arg);
-                        acc = POOL_GET1(func.ref);
+                        acc = u6a_vm_pool_get1(func.ref).fn;
                         break;
                     case u6a_vf_i:
                         acc = arg;
                         break;
                     case u6a_vf_out:
                         acc = arg;
-                        // May fail to print, but we don't care
                         fputc(func.token.ch, ostream);
                         break;
                     case u6a_vf_j:
                         acc = arg;
                         ins = text + func.ref;
-                        continue;
+                        break;
                     case u6a_vf_f:
                         // Safe to assign IP here before jumping, as func won't be `j` or `f`
                         ins = text + func.ref;
                         func = acc;
-                        // The `s2` function incremenets IP before pushing `j`, so decrement IP here
-                        if (func.token.fn == u6a_vf_s2) {
-                            --ins;
-                        }
                         arg = STACK_POP();
                         goto do_apply;
                     case u6a_vf_c:
@@ -281,7 +272,7 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                         acc = arg;
                         break;
                     case u6a_vf_d1_c:
-                        func = POOL_GET1(func.ref);
+                        func = u6a_vm_pool_get1(func.ref).fn;
                         goto do_apply;
                     case u6a_vf_d1_s:
                         tuple = u6a_vm_pool_get2(func.ref);
@@ -295,8 +286,8 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                         ins = text + func.ref;
                         continue;
                     case u6a_vf_v:
-                        vm_var_fn_free(arg);
                         acc.token.fn = u6a_vf_v;
+                        vm_var_fn_free(arg);
                         break;
                     case u6a_vf_p:
                         acc = arg;
@@ -334,7 +325,7 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                 STACK_PUSH1(acc);
                 break;
             case u6a_vo_xch:
-                if (acc.token.fn == u6a_vf_d) {
+                if (UNLIKELY(acc.token.fn == u6a_vf_d)) {
                     func = STACK_POP();
                     arg = STACK_POP();
                     ACC_FN_REF(u6a_vf_d1_s, u6a_vm_pool_alloc2(func, arg));

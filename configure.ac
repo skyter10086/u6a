@@ -9,11 +9,11 @@ dnl Check for operating system
 AC_CANONICAL_HOST
 case "${host_os}" in
     linux*)
-        AC_SUBST([MANPATH_CONF], [/etc/manpath.config])
+        AC_SUBST([MANPATH_CONF],  [/etc/manpath.config])
         AC_SUBST([REBUILD_MANDB], [mandb])
         ;;
     darwin*)
-        AC_SUBST([MANPATH_CONF], [/private/etc/man.conf])
+        AC_SUBST([MANPATH_CONF],  [/private/etc/man.conf])
         AC_SUBST([REBUILD_MANDB], [/usr/libexec/makewhatis])
         ;;
     *)

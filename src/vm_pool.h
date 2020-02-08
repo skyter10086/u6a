@@ -33,9 +33,6 @@ uint32_t
 u6a_vm_pool_alloc1(struct u6a_vm_var_fn v1);
 
 uint32_t
-u6a_vm_pool_fill2(uint32_t offset, struct u6a_vm_var_fn v2);
-
-uint32_t
 u6a_vm_pool_alloc2(struct u6a_vm_var_fn v1, struct u6a_vm_var_fn v2);
 
 uint32_t

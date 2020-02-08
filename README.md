@@ -35,7 +35,7 @@ Usage:
 ```bash
 # Compile an Unlambda source file into bytecode.
 u6ac -o foo.unl.bc foo.unl
-# execute the bytecode file.
+# Execute the bytecode file.
 u6a foo.unl.bc
 ```
 

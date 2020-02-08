@@ -95,9 +95,9 @@ vm_stack_free(struct vm_stack* vs) {
 
 bool
 u6a_vm_stack_init(uint32_t stack_seg_len_, const char* err_stage_) {
-    active_stack = vm_stack_create(NULL, UINT32_MAX);
     stack_seg_len = stack_seg_len_;
     err_stage = err_stage_;
+    active_stack = vm_stack_create(NULL, UINT32_MAX);
     return active_stack != NULL;
 }
 
@@ -222,9 +222,9 @@ u6a_vm_stack_pop() {
 struct u6a_vm_var_fn
 u6a_vm_stack_xch(struct u6a_vm_var_fn v0) {
     struct vm_stack* vs = active_stack;
-    struct u6a_vm_var_fn top = vs->elems[vs->top - 1];
+    struct u6a_vm_var_fn elem = vs->elems[vs->top - 1];
     vs->elems[vs->top - 1] = v0;
-    return top;
+    return elem;
 }
 
 void*
