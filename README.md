@@ -9,7 +9,7 @@ Implementation of Unlambda, an esoteric programming language.
 
 The u6a project provides a bytecode compiler and a runtime system for the [Unlambda](http://www.madore.org/~david/programs/unlambda/) programming language.
 
-Ideas behind this implementation can be found [here](https://cismon.net/articles/2020/01/30/1580374678582.html).
+Ideas behind this implementation can be found [here](https://github.com/CismonX/u6a/wiki/Developer's-Notes-on-Implementing-Unlambda).
 
 ## Getting Started
 
