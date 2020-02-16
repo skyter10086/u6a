@@ -81,6 +81,15 @@ void
 u6a_err_vm_pool_oom(const char* stage);
 
 void
+u6a_err_invalid_opcode(const char* stage, int opcode);
+
+void
+u6a_err_invalid_ex_opcode(const char* stage, int ex_opcode);
+
+void
+u6a_err_invalid_vm_func(const char* stage, int fn);
+
+void
 u6a_info_verbose_(const char* format, ...);
 
 const char*

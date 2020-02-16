@@ -48,17 +48,28 @@ static const char* info_runtime = "runtime";
 #define CHECK_BC_HEADER_VER(file_header)                     \
     ( (file_header).ver_major == U6A_VER_MAJOR && (file_header).ver_minor == U6A_VER_MINOR )
 
+// Addref before free, for acc may equal to fn
+#define ACC_FN(fn_)                                          \
+    vm_var_fn_addref(fn_);                                   \
+    vm_var_fn_free(acc);                                     \
+    acc = fn_
+#define ACC_FN_INIT(fn_)                                     \
+    vm_var_fn_free(acc);                                     \
+    acc = fn_
 #define ACC_FN_REF(fn_, ref_)                                \
+    vm_var_fn_free(acc);                                     \
     acc = U6A_VM_VAR_FN_REF(fn_, ref_);                      \
     if (UNLIKELY(acc.ref == UINT32_MAX)) {                   \
         goto runtime_error;                                  \
     }
-#define CHECK_FORCE()                                        \
+#define CHECK_FORCE(log_func, err_val)                       \
     if (!force_exec) {                                       \
+        log_func(err_runtime, err_val);                      \
         goto runtime_error;                                  \
     }
 
 #define STACK_PUSH1(fn_0)                                    \
+    vm_var_fn_addref(fn_0);                                  \
     if (UNLIKELY(!u6a_vm_stack_push1(fn_0))) {               \
         goto runtime_error;                                  \
     }
@@ -75,7 +86,8 @@ static const char* info_runtime = "runtime";
         goto runtime_error;                                  \
     }
 #define STACK_POP()                                          \
-    u6a_vm_stack_top();                                      \
+    vm_var_fn_free(top);                                     \
+    top = u6a_vm_stack_top();                                \
     if (UNLIKELY(!u6a_vm_stack_pop())) {                     \
         goto runtime_error;                                  \
     }
@@ -191,10 +203,10 @@ u6a_runtime_init(struct u6a_runtime_options* options) {
 
 U6A_HOT union u6a_vm_var
 u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
-    struct u6a_vm_var_fn acc;
+    struct u6a_vm_var_fn acc = { 0 }, top = { 0 };
     struct u6a_vm_ins* ins = text + text_subst_len;
     int current_char = EOF;
-    struct u6a_vm_var_fn func, arg;
+    struct u6a_vm_var_fn func = { 0 }, arg = { 0 };
     struct u6a_vm_var_tuple tuple;
     void* ptr;
     while (true) {
@@ -204,55 +216,67 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                     func.token = ins->operand.fn.first;
                 } else {
                     func = acc;
+                    goto arg_from_ins;
                 }
                 if (ins->operand.fn.second.fn) {
+                    arg_from_ins:
                     arg.token = ins->operand.fn.second;
                 } else {
                     arg = acc;
                 }
                 goto do_apply;
             case u6a_vo_la:
-                func = STACK_POP();
+                STACK_POP();
+                func = top;
                 arg = acc;
                 do_apply:
                 switch (func.token.fn) {
                     case u6a_vf_s:
+                        vm_var_fn_addref(arg);
                         ACC_FN_REF(u6a_vf_s1, u6a_vm_pool_alloc1(arg));
                         break;
                     case u6a_vf_s1:
+                        vm_var_fn_addref(arg);
+                        vm_var_fn_addref(u6a_vm_pool_get1(func.ref).fn);
                         ACC_FN_REF(u6a_vf_s2, u6a_vm_pool_alloc2(u6a_vm_pool_get1(func.ref).fn, arg));
                         break;
                     case u6a_vf_s2:
+                        tuple = u6a_vm_pool_get2(func.ref);
+                        vm_var_fn_addref(tuple.v1.fn);
+                        vm_var_fn_addref(tuple.v2.fn);
+                        vm_var_fn_addref(arg);
                         if (ins - text == 0x03) {
-                            STACK_PUSH3(arg, u6a_vm_pool_get2(func.ref));
+                            STACK_PUSH3(arg, tuple);
                         } else {
-                            STACK_PUSH4(U6A_VM_VAR_FN_REF(u6a_vf_j, ins - text), arg, u6a_vm_pool_get2(func.ref));
+                            STACK_PUSH4(U6A_VM_VAR_FN_REF(u6a_vf_j, ins - text), arg, tuple);
                         }
-                        acc = vm_var_fn_addref(arg);
+                        ACC_FN(arg);
                         ins = text;
                         continue;
                     case u6a_vf_k:
+                        vm_var_fn_addref(arg);
                         ACC_FN_REF(u6a_vf_k1, u6a_vm_pool_alloc1(arg));
                         break;
                     case u6a_vf_k1:
-                        acc = u6a_vm_pool_get1(func.ref).fn;
+                        ACC_FN(u6a_vm_pool_get1(func.ref).fn);
                         break;
                     case u6a_vf_i:
-                        acc = arg;
+                        ACC_FN(arg);
                         break;
                     case u6a_vf_out:
-                        acc = arg;
+                        ACC_FN(arg);
                         fputc(func.token.ch, ostream);
                         break;
                     case u6a_vf_j:
-                        acc = arg;
+                        ACC_FN(arg);
                         ins = text + func.ref;
                         break;
                     case u6a_vf_f:
                         // Safe to assign IP here before jumping, as func won't be `j` or `f`
                         ins = text + func.ref;
+                        STACK_POP();
                         func = acc;
-                        arg = STACK_POP();
+                        arg = top;
                         goto do_apply;
                     case u6a_vf_c:
                         ptr = u6a_vm_stack_save();
@@ -267,30 +291,28 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                     case u6a_vf_c1:
                         tuple = u6a_vm_pool_get2_separate(func.ref);
                         u6a_vm_stack_resume(tuple.v1.ptr);
-                        u6a_vm_pool_free(func.ref);
                         ins = tuple.v2.ptr;
-                        acc = arg;
+                        ACC_FN(arg);
                         break;
                     case u6a_vf_d1_c:
                         func = u6a_vm_pool_get1(func.ref).fn;
                         goto do_apply;
                     case u6a_vf_d1_s:
                         tuple = u6a_vm_pool_get2(func.ref);
-                        u6a_vm_pool_free(func.ref);
                         STACK_PUSH1(tuple.v1.fn);
-                        acc = tuple.v2.fn;
+                        ACC_FN(tuple.v2.fn);
                         ins = text + 0x03;
                         continue;
                     case u6a_vf_d1_d:
-                        STACK_PUSH2(arg, U6A_VM_VAR_FN_REF(u6a_vf_f, ins - text));
+                        STACK_PUSH2(vm_var_fn_addref(arg), U6A_VM_VAR_FN_REF(u6a_vf_f, ins - text));
                         ins = text + func.ref;
                         continue;
                     case u6a_vf_v:
+                        vm_var_fn_free(acc);
                         acc.token.fn = u6a_vf_v;
-                        vm_var_fn_free(arg);
                         break;
                     case u6a_vf_p:
-                        acc = arg;
+                        ACC_FN(arg);
                         fputs(rodata + func.ref, ostream);
                         break;
                     case u6a_vf_in:
@@ -299,9 +321,13 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                         arg.token.fn = current_char == EOF ? u6a_vf_v : u6a_vf_i;
                         goto do_apply;
                     case u6a_vf_cmp:
-                        acc = func;
-                        func = arg;
-                        arg.token.fn = acc.token.ch == current_char ? u6a_vf_i : u6a_vf_v;
+                        if (func.token.ch == current_char) {
+                            func = arg;
+                            arg.token.fn = u6a_vf_i;
+                        } else {
+                            func = arg;
+                            arg.token.fn = u6a_vf_v;
+                        }
                         goto do_apply;
                     case u6a_vf_pipe:
                         func = arg;
@@ -315,7 +341,7 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                         // Every program should terminate with explicit `e` function
                         return U6A_VM_VAR_FN(arg);
                     default:
-                        CHECK_FORCE();
+                        CHECK_FORCE(u6a_err_invalid_vm_func, func.token.fn);
                 }
                 break;
             case u6a_vo_sa:
@@ -326,8 +352,10 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                 break;
             case u6a_vo_xch:
                 if (UNLIKELY(acc.token.fn == u6a_vf_d)) {
-                    func = STACK_POP();
-                    arg = STACK_POP();
+                    STACK_POP();
+                    func = top;
+                    STACK_POP();
+                    arg = top;
                     ACC_FN_REF(u6a_vf_d1_s, u6a_vm_pool_alloc2(func, arg));
                 } else {
                     acc = u6a_vm_stack_xch(acc);
@@ -335,20 +363,20 @@ u6a_runtime_execute(FILE* restrict istream, FILE* restrict ostream) {
                 break;
             case u6a_vo_del:
                 delay:
-                acc = U6A_VM_VAR_FN_REF(u6a_vf_d1_d, ins + 1 - text);
+                ACC_FN_INIT(U6A_VM_VAR_FN_REF(u6a_vf_d1_d, ins + 1 - text));
                 ins = text + text_subst_len + ins->operand.offset;
                 continue;
             case u6a_vo_lc:
                 switch (ins->opcode_ex) {
                     case u6a_vo_ex_print:
-                        acc = U6A_VM_VAR_FN_REF(u6a_vf_p, ins->operand.offset);
+                        ACC_FN_INIT(U6A_VM_VAR_FN_REF(u6a_vf_p, ins->operand.offset));
                         break;
                     default:
-                        CHECK_FORCE();
+                        CHECK_FORCE(u6a_err_invalid_ex_opcode, ins->opcode_ex);
                 }
                 break;
             default:
-                CHECK_FORCE();
+                CHECK_FORCE(u6a_err_invalid_opcode, ins->opcode);
         }
         ++ins;
     }

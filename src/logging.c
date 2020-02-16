@@ -130,6 +130,21 @@ u6a_err_vm_pool_oom(const char* stage) {
 }
 
 U6A_COLD void
+u6a_err_invalid_opcode(const char* stage, int opcode) {
+    fprintf(stderr, "%s: [%s] invalid opcode %d.\n", prog_name, stage, opcode);
+}
+
+U6A_COLD void
+u6a_err_invalid_ex_opcode(const char* stage, int ex_opcode) {
+    fprintf(stderr, "%s: [%s] invalid extended opcode %d.\n", prog_name, stage, ex_opcode);
+}
+
+U6A_COLD void
+u6a_err_invalid_vm_func(const char* stage, int fn) {
+    fprintf(stderr, "%s: [%s] invalid function %d.\n", prog_name, stage, fn);
+}
+
+U6A_COLD void
 u6a_info_verbose_(const char* format, ...) {
     if (verbose) {
         va_list args;

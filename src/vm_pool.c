@@ -54,7 +54,7 @@ static inline struct vm_pool_elem*
 vm_pool_elem_alloc() {
     struct vm_pool_elem* new_elem;
     if (holes->pos == UINT32_MAX) {
-        if (UNLIKELY(++active_pool->pos >= pool_len)) {
+        if (UNLIKELY(++active_pool->pos == pool_len)) {
             u6a_err_vm_pool_oom(err_stage);
             return NULL;
         }
@@ -127,8 +127,7 @@ u6a_vm_pool_alloc1(struct u6a_vm_var_fn v1) {
     if (UNLIKELY(elem == NULL)) {
         return UINT32_MAX;
     }
-    elem->values.v1.fn = v1;
-    elem->values.v2.fn.token.fn = ~U6A_VM_FN_REF;
+    elem->values = (struct u6a_vm_var_tuple) { .v1.fn = v1, .v2.ptr = NULL };
     elem->flags = 0;
     return elem - active_pool->elems;
 }
@@ -192,8 +191,8 @@ u6a_vm_pool_free(uint32_t offset) {
                 // Continuation destroyed before used
                 u6a_vm_stack_discard(elem->values.v1.ptr);
             } else {
-                free_stack_push(elem->values.v1.fn);
                 free_stack_push(elem->values.v2.fn);
+                free_stack_push(elem->values.v1.fn);
             }
         }
     } while ((elem = free_stack_pop()));
